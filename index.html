@@ -1,0 +1,167 @@
+import React, { useState, useEffect } from 'react';
+
+const TicTacToe = () => {
+  const [board, setBoard] = useState(Array(16).fill(null));
+  const [rabbitIsNext, setRabbitIsNext] = useState(true);
+
+  const RABBIT = '🐰';
+  const TURTLE = '🐢';
+
+  const calculateWinner = (squares) => {
+    const lines = [
+      [0, 1, 2, 3],
+      [4, 5, 6, 7],
+      [8, 9, 10, 11],
+      [12, 13, 14, 15],
+      [0, 4, 8, 12],
+      [1, 5, 9, 13],
+      [2, 6, 10, 14],
+      [3, 7, 11, 15],
+      [0, 5, 10, 15],
+      [3, 6, 9, 12],
+    ];
+    for (let i = 0; i < lines.length; i++) {
+      const [a, b, c, d] = lines[i];
+      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c] && squares[a] === squares[d]) {
+        return squares[a];
+      }
+    }
+    return null;
+  };
+
+  const handleClick = (i) => {
+    if (calculateWinner(board) || board[i] || !rabbitIsNext) {
+      return;
+    }
+    const newBoard = board.slice();
+    newBoard[i] = RABBIT;
+    setBoard(newBoard);
+    setRabbitIsNext(false);
+  };
+
+  const computerMove = () => {
+    if (calculateWinner(board) || board.every(square => square !== null)) {
+      return;
+    }
+
+    const newBoard = board.slice();
+    let move = findWinningMove(newBoard, TURTLE);
+    
+    if (move === -1) {
+      move = findWinningMove(newBoard, RABBIT);
+    }
+    
+    if (move === -1) {
+      move = findStrategicMove(newBoard);
+    }
+    
+    if (move === -1) {
+      move = findRandomMove(newBoard);
+    }
+
+    newBoard[move] = TURTLE;
+    setBoard(newBoard);
+    setRabbitIsNext(true);
+  };
+
+  const findWinningMove = (squares, player) => {
+    const lines = [
+      [0, 1, 2, 3],
+      [4, 5, 6, 7],
+      [8, 9, 10, 11],
+      [12, 13, 14, 15],
+      [0, 4, 8, 12],
+      [1, 5, 9, 13],
+      [2, 6, 10, 14],
+      [3, 7, 11, 15],
+      [0, 5, 10, 15],
+      [3, 6, 9, 12],
+    ];
+
+    for (let i = 0; i < lines.length; i++) {
+      const [a, b, c, d] = lines[i];
+      if (squares[a] === player && squares[b] === player && squares[c] === player && !squares[d]) return d;
+      if (squares[a] === player && squares[b] === player && squares[d] === player && !squares[c]) return c;
+      if (squares[a] === player && squares[c] === player && squares[d] === player && !squares[b]) return b;
+      if (squares[b] === player && squares[c] === player && squares[d] === player && !squares[a]) return a;
+    }
+    return -1;
+  };
+
+  const findStrategicMove = (squares) => {
+    const strategicMoves = [5, 6, 9, 10, 0, 3, 12, 15, 1, 2, 4, 7, 8, 11, 13, 14];
+    for (let move of strategicMoves) {
+      if (!squares[move]) return move;
+    }
+    return -1;
+  };
+
+  const findRandomMove = (squares) => {
+    const availableMoves = squares.reduce((acc, square, index) => {
+      if (!square) acc.push(index);
+      return acc;
+    }, []);
+    if (availableMoves.length === 0) return -1;
+    return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+  };
+
+  useEffect(() => {
+    if (!rabbitIsNext) {
+      const timer = setTimeout(() => {
+        computerMove();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [rabbitIsNext, board]);
+
+  const renderSquare = (i) => {
+    return (
+      <button 
+        className="w-14 h-14 bg-white border border-gray-300 text-2xl font-bold"
+        onClick={() => handleClick(i)}
+        disabled={!rabbitIsNext || board[i] || calculateWinner(board)}
+      >
+        {board[i]}
+      </button>
+    );
+  };
+
+  const winner = calculateWinner(board);
+  let status;
+  if (winner) {
+    status = winner === RABBIT ? 'Arnab Menang!' : 'Kura-kura Menang!';
+  } else if (board.every(square => square !== null)) {
+    status = 'Permainan Seri!';
+  } else {
+    status = rabbitIsNext ? 'Giliran Arnab' : 'Kura-kura Sedang Berpikir...';
+  }
+
+  const resetGame = () => {
+    setBoard(Array(16).fill(null));
+    setRabbitIsNext(true);
+  };
+
+  return (
+    <div className="flex flex-col items-center mt-8">
+      <h1 className="text-3xl font-bold mb-4 text-center">
+        Perlumbaan Tic-Tac-Toe 4x4 {RABBIT} vs {TURTLE}
+      </h1>
+      <h2 className="text-xl mb-6 text-center italic">
+        Siapa Lebih Pantas: Si Lincah atau Si Lambat?
+      </h2>
+      <div className="text-2xl font-bold mb-4">{status}</div>
+      <div className="grid grid-cols-4 gap-1 mb-4">
+        {board.map((_, index) => renderSquare(index))}
+      </div>
+      <button 
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        onClick={resetGame}
+      >
+        Mulai Ulang Permainan
+      </button>
+    </div>
+  );
+};
+
+export default TicTacToe;
